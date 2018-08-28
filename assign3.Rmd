@@ -1,0 +1,267 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+```{r}
+#Question2
+#(a)
+library(tree)
+carseat<-read.csv('file:///D:/2018 first semester/datamining/3/carseats.csv',header = TRUE)
+head(carseat)
+dim(carseat)
+```
+
+```{r}
+#split the dataset
+set.seed(1)
+train_sub <- sample(nrow(carseat), 0.7*nrow(carseat))
+trainset<-carseat[train_sub,]
+testset<-carseat[-train_sub,]
+dim(trainset)
+dim(testset)
+```
+
+```{r}
+#fit the regression tree
+tree1 = tree(Sales~., trainset)
+summary(tree1)
+```
+```{r}
+plot(tree1)
+text(tree1, pretty=0)
+```
+
+```{r}
+#calculate MSE
+tree.pred=predict(tree1,trainset)
+mean((tree.pred-trainset$Sales)^2)
+tree.pred=predict(tree1,testset)
+mean((tree.pred-testset$Sales)^2)
+```
+
+```{r}
+#cv
+set.seed(3)
+cv_tree = cv.tree(tree1)
+names(cv_tree)
+cv_tree
+```
+```{r}
+plot(cv_tree$k, cv_tree$dev, type='b')
+plot(cv_tree$size, cv_tree$dev, type='b')
+```
+```{r}
+prune_tree1=prune.tree(tree1,best=5)
+prune.pred1=predict(prune_tree1,testset)
+mean((prune.pred1-testset$Sales)^2)
+prune_tree1=prune.tree(tree1,best=5)
+prune.pred1=predict(prune_tree1,trainset)
+mean((prune.pred1-trainset$Sales)^2)
+```
+
+```{r}
+#(d)bagged regression tree
+library(randomForest)
+set.seed(3)
+bagfit = randomForest(Sales~.,trainset, mtry = 10)
+bagfit
+```
+```{r}
+bag.pred=predict(bagfit,trainset)
+mean((bag.pred-trainset$Sales)^2)
+bag.pred=predict(bagfit,testset)
+mean((bag.pred-testset$Sales)^2)
+```
+```{r}
+#randomforest
+set.seed(3)
+bagfit2 = randomForest(Sales~.,trainset, mtry = 3)
+bagfit2
+```
+```{r}
+bag2.pred=predict(bagfit2,trainset)
+mean((bag2.pred-trainset$Sales)^2)
+bag2.pred=predict(bagfit2,testset)
+mean((bag2.pred-testset$Sales)^2)
+```
+```{r}
+#boosted regression
+library(gbm)
+set.seed(3)
+boostfit1=gbm(Sales~., trainset, distribution='gaussian', n.trees=5000, interaction.depth=4)
+boost1.pred=predict(boostfit1,trainset,n.trees=5000)
+mean((boost1.pred-trainset$Sales)^2)
+boost1.pred=predict(boostfit1,testset,n.trees=5000)
+mean((boost1.pred-testset$Sales)^2)
+```
+
+```{r}
+#experiment different parameters
+for (n in seq(1000,5000,1000)) { 
+  for (d in 1:5) {
+    for (s in c(0.001, 0.01, 0.1)) {
+      boostfit <- gbm(Sales~., trainset, distribution='gaussian', n.trees=n, interaction.depth=d, shrinkage=s)
+      boostpre <- predict(boostfit, testset, n.trees=n)
+      mse<-mean((boostpre-testset$Sales)^2)
+      if (mse < 2) {
+        cat(n, d, s, mse,'\n')
+        }
+      } 
+    } 
+  }
+```
+
+```{r}
+boostbest=gbm(Sales~., trainset, distribution='gaussian', n.trees=3000, interaction.depth=1, shrinkage = 0.01)
+boostbest.pred=predict(boostbest,trainset,n.trees=3000)
+mean((boostbest.pred-trainset$Sales)^2)
+boostbest.pred=predict(boostbest,testset,n.trees=3000)
+mean((boostbest.pred-testset$Sales)^2)
+```
+```{r}
+summary(boostbest)
+```
+
+```{r}
+#question3
+#(a)
+clusterdata<-read.csv('file:///D:/2018 first semester/datamining/3/A3data.csv',header = TRUE)
+head(clusterdata)
+dim(clusterdata)
+plot(clusterdata$X, clusterdata$Y, xlab = 'X', ylab = 'Y', pch = 20)
+```
+```{r}
+#(b)
+set.seed(17)
+km1 = kmeans(clusterdata, 5, nstart = 1)
+km1$tot.withinss
+km2 = kmeans(clusterdata, 5, nstart = 1)
+km2$tot.withinss
+km3 = kmeans(clusterdata, 5, nstart = 1)
+km3$tot.withinss
+km4 = kmeans(clusterdata, 5, nstart = 1)
+km4$tot.withinss
+km5 = kmeans(clusterdata, 5, nstart = 1)
+km5$tot.withinss
+km6 = kmeans(clusterdata, 5, nstart = 1)
+km6$tot.withinss
+km7 = kmeans(clusterdata, 5, nstart = 1)
+km7$tot.withinss
+km8 = kmeans(clusterdata, 5, nstart = 1)
+km8$tot.withinss
+km9 = kmeans(clusterdata, 5, nstart = 1)
+km9$tot.withinss
+km10 = kmeans(clusterdata, 5, nstart = 1)
+km10$tot.withinss
+```
+
+```{r}
+plot(clusterdata, col=(km1$cluster+1), main='K-Means Clustering for km1, pch=20')
+plot(clusterdata, col=(km9$cluster+1), main='K-Means Clustering for km9, pch=20')
+```
+
+```{r}
+#(c)
+library(cluster)
+a = rep(0,9)
+for (k in 2:10) {
+  c <- kmeans(clusterdata, k, nstart = 10)
+  s <-silhouette(c$cluster, dist(clusterdata))
+  xx<-summary(s)
+  a[k-1] <- xx$avg.width
+}
+
+```
+```{r}
+plot(2:10,a,xlab='k',type='b')
+```
+```{r}
+#(d)
+clusterdata1<-read.csv('file:///D:/2018 first semester/datamining/3/A3dataD.csv',header = TRUE)
+set.seed(17)
+km11 = kmeans(clusterdata1, 1, nstart = 20)
+plot(clusterdata1, col=(km11$cluster+1), main='K-Means Clustering')
+km22 = kmeans(clusterdata1, 2, nstart = 20)
+plot(clusterdata1, col=(km22$cluster+1), main='K-Means Clustering')
+km33 = kmeans(clusterdata1, 3, nstart = 20)
+plot(clusterdata1, col=(km33$cluster+1), main='K-Means Clustering')
+km44 = kmeans(clusterdata1, 4, nstart = 20)
+plot(clusterdata1, col=(km44$cluster+1), main='K-Means Clustering')
+km55 = kmeans(clusterdata1, 5, nstart = 20)
+plot(clusterdata1, col=(km55$cluster+1), main='K-Means Clustering')
+km66 = kmeans(clusterdata1, 6, nstart = 20)
+plot(clusterdata1, col=(km66$cluster+1), main='K-Means Clustering')
+km77 = kmeans(clusterdata1, 7, nstart = 20)
+plot(clusterdata1, col=(km77$cluster+1), main='K-Means Clustering')
+km88 = kmeans(clusterdata1, 8, nstart = 20)
+plot(clusterdata1, col=(km88$cluster+1), main='K-Means Clustering')
+km99 = kmeans(clusterdata1, 9, nstart = 20)
+plot(clusterdata1, col=(km99$cluster+1), main='K-Means Clustering')
+km101 = kmeans(clusterdata1, 10, nstart = 20)
+plot(clusterdata1, col=(km101$cluster+1), main='K-Means Clustering')
+library(cluster)
+a = rep(0,9)
+for (k in 2:10) {
+  c <- kmeans(clusterdata1, k, nstart = 20)
+  s <-silhouette(c$cluster, dist(clusterdata1))
+  xx<-summary(s)
+  a[k-1] <- xx$avg.width
+  }
+plot(2:10,a,xlab='k',type='b')
+
+```
+
+
+```{r}
+#QUESTION4
+#(a)
+banknote<-read.csv('D:/2018 first semester/datamining/Banknote.csv',header = TRUE)
+banknote<-banknote[,-3]
+banknote<-banknote[,-3]
+set.seed(3)
+train_bank <- sample(nrow(banknote), 0.7*nrow(banknote))
+trainbank<-banknote[train_bank,]
+testbank<-banknote[-train_bank,]
+head(banknote)
+```
+```{r}
+#(b)
+plot(trainbank$x1, trainbank$x2,  col = (2- trainbank$y), xlab = "x1", ylab = "x2")
+text.legend=c('y = 0','y = 1')
+legend('topright',pch = c(20,20),cex=0.6,legend=text.legend,col=c('red','black'))
+
+```
+```{r}
+#(c)
+library(e1071)
+set.seed(3)
+tune1<-tune(svm, as.factor(y)~x1 + x2, data=trainbank, kernel='linear', ranges = list(cost=c(0.001, 0.01, 0.1, 1, 5, 10, 100)))
+summary(tune1)
+```
+```{r}
+
+svmfit = svm(as.factor(y)~x1+x2, data=trainbank, kernel='linear', cost=0.1, scale = FALSE)
+plot(svmfit, trainbank)
+summary(svmfit)
+ypred=predict(svmfit, testbank)
+table(predict=ypred, truth=testbank$y)
+```
+
+```{r}
+#(d)
+set.seed(5)
+tune.out = tune(svm, as.factor(y)~., data=trainbank, kernel='radial', ranges=list(cost=c(0.1,1,10,100,1000),gamma=c(0.5,1,2,3,4)))
+summary(tune.out$best.model)
+
+```
+```{r}
+plot(tune.out$best.model, trainbank)
+```
+```{r}
+ypred1=predict(tune.out$best.model, testbank)
+table(predict=ypred1, truth=testbank$y)
+```
+
+
+

@@ -1,0 +1,105 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+```{r}
+banknote<-read.csv('D:/2018 first semester/datamining/Banknote.csv',header = TRUE)
+dim(banknote)
+head(banknote)
+```
+```{r}
+y1<-banknote$y
+banknote$y<-factor(y1,levels = c(0,1),labels = c('genuine banknote','forged banknote'))
+head(banknote)
+summary(banknote)
+```
+```{r}
+banknote<-banknote[,-3]
+banknote<-banknote[,-3]
+```
+```{r}
+head(banknote)
+summary(banknote)
+```
+```{r}
+set.seed(1)
+train_sub <- sample(nrow(banknote), 0.7*nrow(banknote))
+trainset<-banknote[train_sub,]
+testset<-banknote[-train_sub,]
+head(trainset)
+head(testset)
+dim(trainset)
+dim(testset)
+```
+```{r}
+#fit multiple logistics model
+bankmodel1<-glm(y~x1 + x2, data = trainset, family=binomial)
+summary(bankmodel1)
+
+```
+```{r}
+#(c)calculating the std. error
+set.seed(2)
+library(boot)
+boot.fn=function(data,index){
+  return(coef(glm(y~(x1+x2),data = trainset,family = binomial(),subset = index)))
+}
+boot(trainset,boot.fn,R = 1000)
+```
+```{r}
+#(d)plot the trainset and decision boudary 
+trainset1<-subset(trainset,y=='forged banknote',select = c(1,2))
+plot(trainset1$x1,trainset1$x2,xlim=c(-8,8),pch = 20, ylim=c(-15,15),col='red')
+trainset2<-subset(trainset,y=='genuine banknote',select = c(1,2))
+
+points(trainset2$x1,trainset2$x2, pch = 20)
+x1_1<-seq(-8,8,0.001)
+points(x1_1,((0.60357-1.11426*x1_1)/0.27708),pch=20,cex=0.4, col='magenta')
+text.legend=c('y = 1','y = 0','Decsion Boundary')
+legend('topright',pch = c(20,20,-1),lty=c(-1,-1,1),cex=0.6,legend=text.legend,col=c('red','black','magenta'))
+
+
+```
+```{r}
+#(e)confusion matrix
+probs=predict(bankmodel1,testset,type = 'response')
+bankmodel.pred=rep('genuine banknote',412)
+bankmodel.pred[probs>0.5]='forged banknote'
+table(bankmodel.pred,testset$y)
+mean(bankmodel.pred==testset$y)
+```
+```{r}
+#Question3
+#(a)
+library(MASS)
+bankmodel_lda<-lda(y~x1+x2,trainset)
+bankmodel_lda
+bankmodel_lda_trainpred<-predict(bankmodel_lda,trainset)
+bankmodel_lda_testpred<-predict(bankmodel_lda,testset)
+mean(bankmodel_lda_trainpred$class!=trainset$y)
+mean(bankmodel_lda_testpred$class!=testset$y)
+```
+```{r}
+#(b)
+bankmodel_qda<-qda(y~x1+x2,trainset)
+bankmodel_qda
+bankmodel_qda_trainpred<-predict(bankmodel_qda,trainset)
+bankmodel_qda_testpred<-predict(bankmodel_qda,testset)
+mean(bankmodel_qda_trainpred$class!=trainset$y)
+mean(bankmodel_qda_testpred$class!=testset$y)
+
+```
+```{r}
+bankmodel_glm_trainpred<-predict(bankmodel1,trainset,type = 'response')
+bankmodel.pred_train=rep('genuine banknote',960)
+bankmodel.pred_train[bankmodel_glm_trainpred>0.5]='forged banknote'
+mean(bankmodel.pred_train!=trainset$y)
+bankmodel_glm_testpred<-predict(bankmodel1,testset,type = 'response')
+bankmodel.pred_test=rep('genuine banknote',412)
+bankmodel.pred_test[bankmodel_glm_testpred>0.5]='forged banknote'
+mean(bankmodel.pred_test!=testset$y)
+
+```
+
+
